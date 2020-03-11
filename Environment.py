@@ -1185,10 +1185,9 @@ class Environ:
             Eifficency_V2V_rewardlist) + 0.000001)
         lambdda = 0.1
         T_Security_Rate = 2  # 根据实际情况再选取
-        C = 10
         # print ("Reward", V2I_reward, V2V_reward, time_left)
         if (np.all(V2V_Security_Rate > T_Security_Rate)) or (np.all(V2V_Security_Rate == T_Security_Rate)):
-            t = (lambdda * Eifficency_V2I_reward + (1 - lambdda) * Eifficency_V2V_reward) / C
+            t = lambdda * Eifficency_V2I_reward + (1 - lambdda) * Eifficency_V2V_reward
         else:
             t = -1
         # t = lambdda * Eifficency_V2V_reward + (1 - lambdda) * Eifficency_V2I_reward
