@@ -5,7 +5,7 @@ import numpy as np
 
 
 # from utils import save_npy, load_npy
-
+# This <"ReplayMemory"> used for stroing training data
 class ReplayMemory:
     def __init__(self, model_dir):
         self.model_dir = model_dir
@@ -17,7 +17,7 @@ class ReplayMemory:
         self.batch_size = 2000
         self.count = 0
         self.current = 0
-
+    # Add training data
     def add(self, prestate, poststate, reward, action):
         self.actions[self.current] = action
         self.rewards[self.current] = reward
@@ -25,7 +25,7 @@ class ReplayMemory:
         self.poststate[self.current] = poststate
         self.count = max(self.count, self.current + 1)
         self.current = (self.current + 1) % self.memory_size
-
+    # Get a batch used for training in class <"Agent"> function <"q_learning_mini_batch">
     def sample(self):
         indexes = []
         while len(indexes) < self.batch_size:

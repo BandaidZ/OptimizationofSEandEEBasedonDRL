@@ -24,6 +24,7 @@ flags.DEFINE_boolean('double_q', False, 'Whether to use double q-learning')
 # Environment
 flags.DEFINE_string('env_name', 'Breakout-v0', 'The name of gym environment to use')
 flags.DEFINE_integer('action_repeat', 4, 'The number of action to be repeated')
+flags.DEFINE_integer('num_vehicles', 100, 'The number of vehicles in environment')
 
 # Etc
 flags.DEFINE_boolean('use_gpu', True, 'Whether to use gpu or not')
@@ -33,14 +34,6 @@ flags.DEFINE_boolean('is_train', True, 'Whether to do training or testing')
 flags.DEFINE_integer('random_seed', 123, 'Value of random seed')
 
 FLAGS = flags.FLAGS
-
-# Set random seed
-tf.set_random_seed(FLAGS.random_seed)
-random.seed(FLAGS.random_seed)
-
-if FLAGS.gpu_fraction == '':
-    raise ValueError("--gpu_fraction should be defined")
-
 
 def calc_gpu_fraction(fraction_string):
     idx, num = fraction_string.split('/')
@@ -52,6 +45,15 @@ def calc_gpu_fraction(fraction_string):
 
 
 def main(_):
+
+    # Set random seed
+    tf.set_random_seed(FLAGS.random_seed)
+    random.seed(FLAGS.random_seed)
+
+    if FLAGS.gpu_fraction == '':
+        raise ValueError("--gpu_fraction should be defined")
+
+    # The simulator of traffic environment
     up_lanes = [3.5 / 2, 3.5 / 2 + 3.5, 250 + 3.5 / 2, 250 + 3.5 + 3.5 / 2, 500 + 3.5 / 2, 500 + 3.5 + 3.5 / 2]
     down_lanes = [250 - 3.5 - 3.5 / 2, 250 - 3.5 / 2, 500 - 3.5 - 3.5 / 2, 500 - 3.5 / 2, 750 - 3.5 - 3.5 / 2,
                   750 - 3.5 / 2]
@@ -60,8 +62,9 @@ def main(_):
                    1299 - 3.5 / 2]
     width = 750
     height = 1299
+    
     Env = Environ(down_lanes, up_lanes, left_lanes, right_lanes, width, height)
-    Env.new_random_game()
+    Env.new_random_game(FLAGS.num_vehicles)
     gpu_options = tf.GPUOptions(
         per_process_gpu_memory_fraction=calc_gpu_fraction(FLAGS.gpu_fraction))
     config = tf.ConfigProto()

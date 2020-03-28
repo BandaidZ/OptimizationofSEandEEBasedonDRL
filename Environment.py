@@ -5,9 +5,8 @@ import random
 import math
 
 
-# This file is revised for more precise and concise expression.
+# Simulator of the V2V Channels
 class V2Vchannels:
-    # Simulator of the V2V Channels
     def __init__(self, n_Veh, n_RB):
         self.t = 0
         self.h_bs = 1.5
@@ -15,25 +14,33 @@ class V2Vchannels:
         self.fc = 2
         self.decorrelation_distance = 10
         self.shadow_std = 3
+        # the number of vehicles
         self.n_Veh = n_Veh
+        #the number of resource blocks
         self.n_RB = n_RB
         self.update_shadow([])
 
+    # Update the location information of each vehicle
     def update_positions(self, positions):
         self.positions = positions
 
+    # Use vehicle location information to calculate path loss between every two vehicles
+    # <"PathLoss"> Is a two-dimensional square matrix and the size of matrix is (n_Veh,n_Veh)
     def update_pathloss(self):
         self.PathLoss = np.zeros(shape=(len(self.positions), len(self.positions)))
         for i in range(len(self.positions)):
             for j in range(len(self.positions)):
                 self.PathLoss[i][j] = self.get_path_loss(self.positions[i], self.positions[j])
 
+    # Use incremental distance list to calculate shadow fading
+    # <"Shadow"> Is a two-dimensional square matrix and the size of matrix is (n_Veh,n_Veh)
     def update_shadow(self, delta_distance_list):
         delta_distance = np.zeros((len(delta_distance_list), len(delta_distance_list)))
         for i in range(len(delta_distance)):
             for j in range(len(delta_distance)):
                 delta_distance[i][j] = delta_distance_list[i] + delta_distance_list[j]
         if len(delta_distance_list) == 0:
+            # Randomly initialize shadow fading using normal distribution
             self.Shadow = np.random.normal(0, self.shadow_std, size=(self.n_Veh, self.n_Veh))
         else:
             self.Shadow = np.exp(-1 * (delta_distance / self.decorrelation_distance)) * self.Shadow + \
@@ -42,12 +49,15 @@ class V2Vchannels:
                                                                                                                       size=(
                                                                                                                           self.n_Veh,
                                                                                                                           self.n_Veh))
-
+    # Computing fast fading
+    # <"FastFading"> Is a three-dimensional matrix and the size of matrix is (n_Veh,n_Veh,n_RB)
     def update_fast_fading(self):
         h = 1 / np.sqrt(2) * (np.random.normal(size=(self.n_Veh, self.n_Veh, self.n_RB)) + 1j * np.random.normal(
             size=(self.n_Veh, self.n_Veh, self.n_RB)))
         self.FastFading = 20 * np.log10(np.abs(h))
 
+    # This function used to calculate path loss in <"update_passloss"> function
+    # Just an intermediate function in the calculation process, you can ignore it in non-essential situations
     def get_path_loss(self, position_A, position_B):
         d1 = abs(position_A[0] - position_B[0])
         d2 = abs(position_A[1] - position_B[1])
@@ -78,14 +88,13 @@ class V2Vchannels:
             self.shadow_std = 4  # if Non line of sight, the std is 4
         return PL
 
-
+# Simulator of the V2I channels
 class V2Ichannels:
-    # Simulator of the V2I channels
     def __init__(self, n_Veh, n_RB):
         self.h_bs = 25
         self.h_ms = 1.5
         self.Decorrelation_distance = 50
-        self.BS_position = [750 / 2, 1299 / 2]  # Suppose the BS is in the center
+        self.BS_position = [750 / 2, 1299 / 2]   # Suppose the BS(Base Station) is in the center
         self.shadow_std = 8
         self.n_Veh = n_Veh
         self.n_RB = n_RB
@@ -94,6 +103,8 @@ class V2Ichannels:
     def update_positions(self, positions):
         self.positions = positions
 
+    # Use vehicle location information to calculate path loss between each vehicle and BS
+    # <"PathLoss"> Is a one-dimensional matrix and the size of matrix is (n_Veh)
     def update_pathloss(self):
         self.PathLoss = np.zeros(len(self.positions))
         for i in range(len(self.positions)):
@@ -102,8 +113,11 @@ class V2Ichannels:
             distance = math.hypot(d1, d2)  # change from meters to kilometers
             self.PathLoss[i] = 128.1 + 37.6 * np.log10(math.sqrt(distance ** 2 + (self.h_bs - self.h_ms) ** 2) / 1000)
 
+    # Use incremental distance list to calculate shadow fading.
+    # <"Shadow"> Is a one-dimensional square matrix and the size of matrix is (n_Veh)
     def update_shadow(self, delta_distance_list):
-        if len(delta_distance_list) == 0:  # initialization
+        if len(delta_distance_list) == 0:  
+            # initialization
             self.Shadow = np.random.normal(0, self.shadow_std, self.n_Veh)
         else:
             delta_distance = np.asarray(delta_distance_list)
@@ -111,20 +125,23 @@ class V2Ichannels:
                           np.sqrt(1 - np.exp(-2 * (delta_distance / self.Decorrelation_distance))) * np.random.normal(0,
                                                                                                                       self.shadow_std,
                                                                                                                       self.n_Veh)
-
+    # Computing fast fading
+    # <"FastFading"> Is a two-dimensional matrix and the size of matrix is (n_Veh,n_RB)
     def update_fast_fading(self):
         h = 1 / np.sqrt(2) * (np.random.normal(size=(self.n_Veh, self.n_RB)) + 1j * np.random.normal(
             size=(self.n_Veh, self.n_RB)))
         self.FastFading = 20 * np.log10(np.abs(h))
 
-
+# Simulator of the Eve channels
+# The methods in this class are similar to the methods in <"V2Ichannels"> class,
+# except that you only need to replace the BS(base station) with the Eve(eavesdropper).
 class Evechannels:
-    # Simulator of the Eve channels
     def __init__(self, n_Veh, n_RB):
         self.h_bs = 1.5
         self.h_ms = 1.5
         self.Decorrelation_distance = 10
-        self.Eve_position = [750 / 2, 1299 / 2]  # Suppose the Eve is in the center
+        # Location of the eavesdropper and suppose the Eve(eavesdropper) is in the center
+        self.Eve_position = [750 / 2, 1299 / 2]  
         self.shadow_std = 3
         self.n_Veh = n_Veh
         self.n_RB = n_RB
@@ -156,9 +173,8 @@ class Evechannels:
             size=(self.n_Veh, self.n_RB)))
         self.FastFading = 20 * np.log10(np.abs(h))
 
-
+# Vehicle simulator: include all the information for a vehicle
 class Vehicle:
-    # Vehicle simulator: include all the information for a vehicle
     def __init__(self, start_position, start_direction, velocity):
         self.position = start_position
         self.direction = start_direction
@@ -166,26 +182,25 @@ class Vehicle:
         self.neighbors = []
         self.destinations = []
 
-
+# Enviroment Simulator: Provide states and rewards to agents. 
+# Evolve to new state based on the actions taken by the vehicles.
 class Environ:
-    # Enviroment Simulator: Provide states and rewards to agents. 
-    # Evolve to new state based on the actions taken by the vehicles.
     def __init__(self, down_lane, up_lane, left_lane, right_lane, width, height):
+        # each 0.01s renew the position of vehicles
         self.timestep = 0.01
+        # The simulator of traffic environment
         self.down_lanes = down_lane
         self.up_lanes = up_lane
         self.left_lanes = left_lane
         self.right_lanes = right_lane
         self.width = width
         self.height = height
-        self.vehicles = []
-        self.demands = []
+
+        # parameter settings
         self.V2V_power_dB = 23  # dBm
         self.V2I_power_dB = 23  # dBm
         self.V2I_power = 0.2  # W
         self.V2V_power_dB_List = [23, 10, 5]  # the power levels
-        # self.V2V_power = 10**(self.V2V_power_dB)
-        # self.V2I_power = 10**(self.V2I_power_dB)
         self.Circle_power_dB = 16  # dBm
         self.Circle_power = 0.04  # W
         self.sig2_dB = -114
@@ -196,17 +211,22 @@ class Environ:
         self.eveNoiseFigure = 7  # 监听者噪声系数
         self.vehNoiseFigure = 9
         self.sig2 = 10 ** (self.sig2_dB / 10)
+
+        #The list
+        self.vehicles = []
         self.V2V_Shadowing = []
         self.V2I_Shadowing = []
         self.Eve_Shadowing = []
         self.delta_distance = []
+
+        #The number of resource blocks and the number of vehicles.
         self.n_RB = 20
         self.n_Veh = 100
-        self.V2Vchannels = V2Vchannels(self.n_Veh, self.n_RB)  # number of vehicles
-        self.V2Ichannels = V2Ichannels(self.n_Veh, self.n_RB)
-        self.Evechannels = Evechannels(self.n_Veh, self.n_RB)
-
-        self.V2V_Interference_all = np.zeros((self.n_Veh, 3, self.n_RB)) + self.sig2
+        #The initialization
+        #self.V2Vchannels = V2Vchannels(self.n_Veh, self.n_RB)  # number of vehicles
+        #self.V2Ichannels = V2Ichannels(self.n_Veh, self.n_RB)
+        #self.Evechannels = Evechannels(self.n_Veh, self.n_RB)
+        #self.V2V_Interference_all = np.zeros((self.n_Veh, 3, self.n_RB)) + self.sig2
         self.n_step = 0
 
     def add_new_vehicles(self, start_position, start_direction, start_velocity):
@@ -223,27 +243,37 @@ class Environ:
             if start_direction is 'r':
                 self.vehicles.append(Vehicle(start_position + [i-1, 0], start_direction, start_velocity))
 
+    # The formal parameter <"n"> represents the total number of vehicles to be added in each direction.
+    # Use random selection.
     def add_new_vehicles_by_number(self, n):
         for i in range(n):
             ind = np.random.randint(0, len(self.down_lanes))
             start_position = [self.down_lanes[ind], random.randint(0, self.height)]
             start_direction = 'd'
             self.add_new_vehicles(start_position, start_direction, random.randint(10, 15))
+
             start_position = [self.up_lanes[ind], random.randint(0, self.height)]
             start_direction = 'u'
             self.add_new_vehicles(start_position, start_direction, random.randint(10, 15))
+
             start_position = [random.randint(0, self.width), self.left_lanes[ind]]
             start_direction = 'l'
             self.add_new_vehicles(start_position, start_direction, random.randint(10, 15))
+
             start_position = [random.randint(0, self.width), self.right_lanes[ind]]
             start_direction = 'r'
             self.add_new_vehicles(start_position, start_direction, random.randint(10, 15))
+
         self.V2V_Shadowing = np.random.normal(0, 3, [len(self.vehicles), len(self.vehicles)])
         self.V2I_Shadowing = np.random.normal(0, 8, len(self.vehicles))
         self.Eve_Shadowing = np.random.normal(0, 3, len(self.vehicles))
         self.delta_distance = np.asarray([c.velocity for c in self.vehicles])
 
+    # The formal parameter <"num_vehicle"> represents the total number of vehicles to be added in the environment.
+    # The formal parameter <"size_platoon"> represents the size of each platoon.
+    # Use random selection.
     def add_new_platoon_by_number(self, num_vehicle, size_platoon):
+        # the number of platoons.
         for i in range(int(num_vehicle / size_platoon)):
             random_select = random.randint(0, 3)
             if random_select == 0:
@@ -262,6 +292,7 @@ class Environ:
                 ind = np.random.randint(0, len(self.down_lanes))
                 start_position = [random.randint(0, self.width), self.right_lanes[ind]]
                 self.add_new_platoon(start_position, 'r', 15, size_platoon)
+        # Extra cars are added to the environment as free cars
         for i in range(num_vehicle % size_platoon):
             random_select = random.randint(0, 3)
             if random_select == 0:
@@ -280,6 +311,7 @@ class Environ:
                 ind = np.random.randint(0, len(self.down_lanes))
                 start_position = [random.randint(0, self.width), self.right_lanes[ind]]
                 self.add_new_vehicles(start_position, 'r', random.randint(10, 15))
+
         self.V2V_Shadowing = np.random.normal(0, 3, [len(self.vehicles), len(self.vehicles)])
         self.V2I_Shadowing = np.random.normal(0, 8, len(self.vehicles))
         self.Eve_Shadowing = np.random.normal(0, 3, len(self.vehicles))
@@ -288,18 +320,16 @@ class Environ:
     def renew_positions(self):
         # ========================================================
         # This function update the position of each vehicle
-        # ===========================================================
+        # Traverse each vehicle
+        # Randomly choose driving direction when passing by intersection
+        # ========================================================
         i = 0
-        # for i in range(len(self.position)):
         while (i < len(self.vehicles)):
-            # print ('start iteration ', i)
-            # print(self.position, len(self.position), self.direction)
+            # Get each vehicle incremental distance
             delta_distance = self.vehicles[i].velocity * self.timestep
             change_direction = False
             if self.vehicles[i].direction == 'u':
-                # print ('len of position', len(self.position), i)
                 for j in range(len(self.left_lanes)):
-
                     if (self.vehicles[i].position[1] <= self.left_lanes[j]) and (
                             (self.vehicles[i].position[1] + delta_distance) >= self.left_lanes[j]):  # came to an cross
                         if (random.uniform(0, 1) < 0.4):
@@ -315,7 +345,7 @@ class Environ:
                                 (self.vehicles[i].position[1] + delta_distance) >= self.right_lanes[j]):
                             if (random.uniform(0, 1) < 0.4):
                                 self.vehicles[i].position = [self.vehicles[i].position[0] + (
-                                        delta_distance + (self.right_lanes[j] - self.vehicles[i].position[1])),
+                                        delta_distance - (self.right_lanes[j] - self.vehicles[i].position[1])),
                                                              self.right_lanes[j]]
                                 self.vehicles[i].direction = 'r'
                                 change_direction = True
@@ -323,7 +353,6 @@ class Environ:
                 if change_direction == False:
                     self.vehicles[i].position[1] += delta_distance
             if (self.vehicles[i].direction == 'd') and (change_direction == False):
-                # print ('len of position', len(self.position), i)
                 for j in range(len(self.left_lanes)):
                     if (self.vehicles[i].position[1] >= self.left_lanes[j]) and (
                             (self.vehicles[i].position[1] - delta_distance) <= self.left_lanes[j]):  # came to an cross
@@ -331,7 +360,6 @@ class Environ:
                             self.vehicles[i].position = [self.vehicles[i].position[0] - (
                                     delta_distance - (self.vehicles[i].position[1] - self.left_lanes[j])),
                                                          self.left_lanes[j]]
-                            # print ('down with left', self.vehicles[i].position)
                             self.vehicles[i].direction = 'l'
                             change_direction = True
                             break
@@ -341,16 +369,14 @@ class Environ:
                                 self.vehicles[i].position[1] - delta_distance <= self.right_lanes[j]):
                             if (random.uniform(0, 1) < 0.4):
                                 self.vehicles[i].position = [self.vehicles[i].position[0] + (
-                                        delta_distance + (self.vehicles[i].position[1] - self.right_lanes[j])),
+                                        delta_distance - (self.vehicles[i].position[1] - self.right_lanes[j])),
                                                              self.right_lanes[j]]
-                                # print ('down with right', self.vehicles[i].position)
                                 self.vehicles[i].direction = 'r'
                                 change_direction = True
                                 break
                 if change_direction == False:
                     self.vehicles[i].position[1] -= delta_distance
             if (self.vehicles[i].direction == 'r') and (change_direction == False):
-                # print ('len of position', len(self.position), i)
                 for j in range(len(self.up_lanes)):
                     if (self.vehicles[i].position[0] <= self.up_lanes[j]) and (
                             (self.vehicles[i].position[0] + delta_distance) >= self.up_lanes[j]):  # came to an cross
@@ -396,10 +422,9 @@ class Environ:
                     if change_direction == False:
                         self.vehicles[i].position[0] -= delta_distance
             # if it comes to an exit
+            # Change direction according to road setting
             if (self.vehicles[i].position[0] < 0) or (self.vehicles[i].position[1] < 0) or (
                     self.vehicles[i].position[0] > self.width) or (self.vehicles[i].position[1] > self.height):
-                # delete
-                #    print ('delete ', self.position[i])
                 if (self.vehicles[i].direction == 'u'):
                     self.vehicles[i].direction = 'r'
                     self.vehicles[i].position = [self.vehicles[i].position[0], self.right_lanes[-1]]
@@ -420,7 +445,9 @@ class Environ:
 
     def test_channel(self):
         # ===================================
-        #   test the V2I and the V2V channel 
+        #   Test the V2I and the V2V channel 
+        #   Just a test of the simulation environment
+        #   You also can ignore this function
         # ===================================
         self.n_step = 0
         self.vehicles = []
@@ -449,6 +476,8 @@ class Environ:
             print("Shadow:", self.Evechannels.Shadow)
             print("Fast Fading: ", self.Evechannels.FastFading)
 
+    # This function used to calculate large fading in <"test_channel"> function
+    # Just an intermediate function in the calculation process, you can ignore it in non-essential situations
     def update_large_fading(self, positions, time_step):
         self.V2Ichannels.update_positions(positions)
         self.V2Vchannels.update_positions(positions)
@@ -460,7 +489,8 @@ class Environ:
         self.V2Ichannels.update_shadow(delta_distance)
         self.V2Vchannels.update_shadow(delta_distance)
         self.Evechannels.update_shadow(delta_distance)
-
+    # This function used to calculate small fading in <"test_channel"> function
+    # Just an intermediate function in the calculation process, you can ignore it in non-essential situations
     def update_small_fading(self):
         self.V2Ichannels.update_fast_fading()
         self.V2Vchannels.update_fast_fading()
@@ -473,17 +503,20 @@ class Environ:
         for i in range(len(self.vehicles)):
             self.vehicles[i].neighbors = []
             self.vehicles[i].actions = []
-            # print('action and neighbors delete', self.vehicles[i].actions, self.vehicles[i].neighbors)
         Distance = np.zeros((len(self.vehicles), len(self.vehicles)))
         z = np.array([[complex(c.position[0], c.position[1]) for c in self.vehicles]])
         Distance = abs(z.T - z)
         for i in range(len(self.vehicles)):
             sort_idx = np.argsort(Distance[:, i])
             for j in range(3):
+                # Add the three nearest neighbors of each vehicle to its neighbor list
                 self.vehicles[i].neighbors.append(sort_idx[j + 1])
+            # Select three receiving vehicles of the V2V link from the list of nearest vehicles
+            # The nearest vehicle list is determined by this formula <"sort_idx[1:int(len(sort_idx) / 5)]">
             destination = np.random.choice(sort_idx[1:int(len(sort_idx) / 5)], 3, replace=False)
             self.vehicles[i].destinations = destination
 
+    # This function used in <"renew_channels_fastfading"> function
     def renew_channel(self):
         # ===========================================================================
         # This function updates all the channels including V2V and V2I channels
@@ -523,8 +556,11 @@ class Environ:
         Eve_channels_with_fastfading_V = np.repeat(self.Eve_channels_abs_V[:, :, np.newaxis], self.n_RB, axis=2)
         self.Eve_channels_with_fastfading_V = Eve_channels_with_fastfading_V - self.Evechannels.FastFading
 
-    def Compute_Performance_Reward_fast_fading_with_power(self,
-                                                          actions_power):  # revising based on the fast fading part
+    # This function used to compute Eifficency_V2V, Eifficency_V2I and V2V_Security_Rate
+    # But in this project we don't use this function
+    # The formal parameter is a three-dimensional matrix and the size is (n_Veh, 3, 2)
+    # Represents the selected channel and transmit power for each pair of V2V links
+    def Compute_Performance_Reward_fast_fading_with_power(self, actions_power):  # revising based on the fast fading part
         actions = actions_power.copy()[:, :, 0]  # the channel_selection_part
         power_selection = actions_power.copy()[:, :, 1]
         Rate = np.zeros(len(self.vehicles))
@@ -694,8 +730,9 @@ class Environ:
         failed_percentage = self.failed_transmission / (self.failed_transmission + self.success_transmission + 0.0001)
         return Eifficency_V2V, Eifficency_V2I, V2V_Security_Rate
 
-    def Compute_Performance_Reward_fast_fading_with_power_asyn(self,
-                                                               actions_power):  # revising based on the fast fading part
+    # This function used to compute Eifficency_V2V, Eifficency_V2I, V2V_Security_Rate in testing
+    # And it is asyn
+    def Compute_Performance_Reward_fast_fading_with_power_asyn(self, actions_power):  # revising based on the fast fading part
         # ===================================================
         #  --------- Used for Testing -------
         # ===================================================
@@ -868,6 +905,8 @@ class Environ:
         failed_percentage = self.failed_transmission / (self.failed_transmission + self.success_transmission + 0.0001)
         return Eifficency_V2V, Eifficency_V2I, V2V_Security_Rate
 
+    # This function used to compute Eifficency_V2V, Eifficency_V2I, V2V_Security_Rate in training
+    # The formal parameter <"idx"> represents a pair of V2V link
     def Compute_Performance_Reward_Batch(self, actions_power, idx):  # add the power dimension to the action selection
         # ==================================================
         # ------------- Used for Training ----------------
@@ -1129,6 +1168,7 @@ class Environ:
         failed_percentage = self.failed_transmission / (self.failed_transmission + self.success_transmission + 0.0001)
         return Eifficency_V2V, Eifficency_V2I, V2V_Security_Rate
 
+    # Compute the Interference to each channel_selection
     def Compute_Interference(self, actions):
         # ====================================================
         # Compute the Interference to each channel_selection 暂时不改
@@ -1157,11 +1197,7 @@ class Environ:
 
         self.V2V_Interference_all = 10 * np.log10(V2V_Interference)
 
-    # def renew_demand(self):
-    #     # generate a new demand of a V2V
-    #     self.demand = self.demand_amount * np.ones((self.n_RB, 3))
-    #     self.time_limit = 10
-
+    # This function used for training
     def act_for_training(self, actions, idx):
         # =============================================
         # This function gives rewards for training
@@ -1186,15 +1222,16 @@ class Environ:
         lambdda = 0.1
         T_Security_Rate = 2  # 根据实际情况再选取
         # print ("Reward", V2I_reward, V2V_reward, time_left)
+        # The <"t"> represents the reward
         if (np.all(V2V_Security_Rate > T_Security_Rate)) or (np.all(V2V_Security_Rate == T_Security_Rate)):
+            # A positive reward
             t = lambdda * Eifficency_V2I_reward + (1 - lambdda) * Eifficency_V2V_reward
         else:
+            # A negative reward
             t = -1
-        # t = lambdda * Eifficency_V2V_reward + (1 - lambdda) * Eifficency_V2I_reward
-        # print("time left", time_left)
-        # return t
         return t
 
+    # This function used for testing to give the agent information of V2V_reward, V2I_reward, V2V_security_rate
     def act_asyn(self, actions):
         self.n_step += 1
         if self.n_step % 10 == 0:
@@ -1204,6 +1241,7 @@ class Environ:
         self.Compute_Interference(actions)
         return reward1, reward2, constraint
 
+    # We don't use this function
     def act(self, actions):
         # simulate the next state after the action is given
         self.n_step += 1
@@ -1213,6 +1251,7 @@ class Environ:
         self.Compute_Interference(actions)
         return reward1, reward2, constraint
 
+    # Make a new game when training or testing
     def new_random_game(self, n_Veh=0):
         # make a new game
         self.n_step = 0
@@ -1223,6 +1262,9 @@ class Environ:
         self.add_new_platoon_by_number(int(self.n_Veh), 5)
         self.V2Vchannels = V2Vchannels(self.n_Veh, self.n_RB)  # number of vehicles
         self.V2Ichannels = V2Ichannels(self.n_Veh, self.n_RB)
+        self.Evechannels = Evechannels(self.n_Veh, self.n_RB)
+        self.V2V_Interference_all = np.zeros((self.n_Veh, 3, self.n_RB)) + self.sig2
+
         self.renew_channels_fastfading()
         self.renew_neighbor()
         self.demand_amount = 30

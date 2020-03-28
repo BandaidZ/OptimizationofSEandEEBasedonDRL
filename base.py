@@ -2,7 +2,7 @@ from __future__ import print_function
 import os
 import tensorflow as tf
 
-
+# The Base Class
 class BaseModel(object):
 
     def __init__(self, config):
