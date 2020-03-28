@@ -110,10 +110,10 @@ class Agent(BaseModel):
                 # self.save_weight_to_pkl()
             if self.step % self.target_q_update_step == self.target_q_update_step - 1:
                 # print("Update Target Q network:")
-                self.update_target_q_network()  # 更新目标Q网络的参数
+                self.update_target_q_network()  # update the parameters of DQN
 
     # The network training and testing funtion
-    def train(self):    # 要修改
+    def train(self):    # to modify
         num_game, self.update_count, ep_reward = 0, 0, 0.
         total_reward, self.total_loss, self.total_q = 0., 0., 0.
         max_avg_ep_reward = 0
@@ -124,7 +124,7 @@ class Agent(BaseModel):
         number_not_big = 0
         print(self.num_vehicle)
         #!Step1: Start a new simulation environment
-        self.env.new_random_game(self.num_vehicle)   # 感觉相当于episode
+        self.env.new_random_game(self.num_vehicle)   # episode
         for self.step in (range(0, 40000)):  # need more configuration
             #!Step2: Begin training, the tutal steps is 40000
             # initialize set some varibles
@@ -180,7 +180,7 @@ class Agent(BaseModel):
                                 state_old = self.get_state([i, j])
                                 action = self.predict(state_old, self.step, True)
                                 self.merge_action([i, j], action)
-                            if i % (len(self.env.vehicles) / 10) == 1:  # 都加10次？
+                            if i % (len(self.env.vehicles) / 10) == 1:  # add 10
                                 action_temp = self.action_all_with_power.copy()
                                 V2V_reward, V2I_reward, V2V_security_rate = self.env.act_asyn(action_temp)  # self.action_all)
                                 Eifficency_V2V.append(np.sum(V2V_reward))
