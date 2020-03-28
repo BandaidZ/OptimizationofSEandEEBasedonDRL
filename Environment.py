@@ -207,8 +207,8 @@ class Environ:
         self.bsAntGain = 8
         self.bsNoiseFigure = 5
         self.vehAntGain = 3
-        self.eveAntGain = 6  # 监听者天线增益
-        self.eveNoiseFigure = 7  # 监听者噪声系数
+        self.eveAntGain = 6  # gain of eavesdropper
+        self.eveNoiseFigure = 7  # noise coefficient of eavesdropper
         self.vehNoiseFigure = 9
         self.sig2 = 10 ** (self.sig2_dB / 10)
 
@@ -568,7 +568,7 @@ class Environ:
         num_reuserb = np.zeros(self.n_RB, dtype="int32")
 
         # ================================
-        # 监听者信号对V2I链路的干扰
+        # eavesdropper's interference to V2I links
         # ================================
         Eve_V2I_Interference = np.zeros(self.n_RB)
 
@@ -666,7 +666,7 @@ class Environ:
         V2I_Rate = np.log2(1 + np.divide(10 ** (V2I_Signals / 10), self.V2I_Interference[0:min(self.n_RB, self.n_Veh)]))
 
         # =============================
-        #   计算监听者对V2I/V2V链路的速率
+        #   calculate the rate of V2V and V2I for eavesdropper
         # =============================
         Eve_V2I_Signals = self.V2I_power_dB - self.Eve_channels_abs_I[0:min(self.n_RB,
                                                                           self.n_Veh)] + self.vehAntGain + self.eveAntGain - self.eveNoiseFigure
@@ -677,13 +677,13 @@ class Environ:
             1 + np.divide(Eve_V2V_Signal[self.activate_links], self.Eve_V2V_Interference[self.activate_links]))
 
         # =============================
-        #   计算相应的保密速率
+        #   secrecy rate
         # =============================
         V2I_Security_Rate = V2I_Rate - Eve_V2I_Rate
         V2V_Security_Rate = V2V_Rate - Eve_V2V_Rate
 
         # =============================
-        #   计算SE和EE
+        #   calculate SE and EE
         # =============================
         SE_V2I = V2I_Rate / 10
         # sum_reuserb = 0.1
@@ -695,7 +695,7 @@ class Environ:
         # print(sum_V2V_power)
 
         # ============================
-        #   计算复合效率
+        #   efficiency considering SE and EE
         # ============================
         Eifficency_V2V = V2V_Rate / (10 * (sum_V2V_power + self.n_Veh * 3 * self.Circle_power))
         Eifficency_V2I = V2I_Rate / (10 * (self.n_RB * (self.V2I_power + self.Circle_power)))
@@ -743,7 +743,7 @@ class Environ:
         num_reuserb = np.zeros(self.n_RB, dtype="int32")
 
         # ================================
-        # 监听者信号对V2I链路的干扰
+        # eavesdropper's interference to V2I
         # ================================
         Eve_V2I_Interference = np.zeros(self.n_RB)
 
@@ -841,7 +841,7 @@ class Environ:
         V2I_Rate = np.log2(1 + np.divide(10 ** (V2I_Signals / 10), self.V2I_Interference[0:min(self.n_RB, self.n_Veh)]))
 
         # =============================
-        #   计算监听者对V2I/V2V链路的速率
+        #   rate of V2I and V2V for eavesdropper
         # =============================
         Eve_V2I_Signals = self.V2I_power_dB - self.Eve_channels_abs_I[0:min(self.n_RB,
                                                                           self.n_Veh)] + self.vehAntGain + self.eveAntGain - self.eveNoiseFigure
@@ -852,13 +852,13 @@ class Environ:
             1 + np.divide(Eve_V2V_Signal[self.activate_links], self.Eve_V2V_Interference[self.activate_links]))
 
         # =============================
-        #   计算相应的保密速率
+        #   secrecy rate
         # =============================
         V2I_Security_Rate = V2I_Rate - Eve_V2I_Rate
         V2V_Security_Rate = V2V_Rate - Eve_V2V_Rate
 
         # =============================
-        #   计算SE和EE
+        #   SE EE
         # =============================
         SE_V2I = V2I_Rate / 10
         # sum_reuserb = 0.1
@@ -870,7 +870,7 @@ class Environ:
         # print(sum_V2V_power)
 
         # ============================
-        #   计算复合效率
+        #   efficiency considering SE and EE
         # ============================
         Eifficency_V2V = V2V_Rate / (10 * (sum_V2V_power + self.n_Veh * 3 * self.Circle_power))
         Eifficency_V2I = V2I_Rate / (10 * (self.n_RB * (self.V2I_power + self.Circle_power)))
@@ -927,7 +927,7 @@ class Environ:
         actions[idx[0], idx[1]] = 100  # something not relavant
 
         # ================================
-        # 监听者信号对V2I链路的干扰
+        # interference to V2I
         # ================================
         Eve_V2I_Interference = np.zeros(self.n_RB)
         Eve_V2I_Rate_list = np.zeros((self.n_RB, len(self.V2V_power_dB_List)))
@@ -1102,7 +1102,7 @@ class Environ:
         V2I_Rate = np.log2(1 + np.divide(10 ** (V2I_Signals / 10), self.V2I_Interference[0:min(self.n_RB, self.n_Veh)]))
 
         # =============================
-        #   计算监听者对V2I/V2V链路的速率
+        #   rate of V2I and V2V for eavesdropper
         # =============================
         # Eve_V2I_Signals = self.V2I_power_dB - self.Eve_channels_abs_I[0:min(self.n_RB,
         #                                                                   self.n_Veh)] + self.vehAntGain + self.eveAntGain - self.eveNoiseFigure
@@ -1113,7 +1113,7 @@ class Environ:
         #     1 + np.divide(Eve_V2V_Signal[self.activate_links], self.Eve_V2V_Interference[self.activate_links]))
 
         # =============================
-        #   计算相应的保密速率
+        #   secrecy rate
         # =============================
         # V2I_Security_Rate = V2I_Rate - Eve_V2I_Rate
         # V2V_Security_Rate = V2V_Rate_1 - Eve_V2V_Rate
@@ -1121,7 +1121,7 @@ class Environ:
         V2V_Security_Rate = V2V_Rate_list - Eve_V2V_Rate_list
 
         # =============================
-        #   计算SE和EE
+        #   SE EE
         # =============================
         SE_V2I = V2I_Rate_list / 10
         # sum_reuserb = 0.1
@@ -1133,7 +1133,7 @@ class Environ:
         # print(sum_V2V_power)
 
         # ============================
-        #   计算复合效率
+        #   efficiency considering SE and EE
         # ============================
         Eifficency_V2V = V2V_Rate_list / (10 * (sum_V2V_power + self.n_Veh * 3 * self.Circle_power))
         Eifficency_V2I = V2I_Rate_list / (10 * (self.n_RB * (self.V2I_power + self.Circle_power)))
@@ -1220,7 +1220,7 @@ class Environ:
                                  np.min(Eifficency_V2V_rewardlist)) / (np.max(Eifficency_V2V_rewardlist) - np.min(
             Eifficency_V2V_rewardlist) + 0.000001)
         lambdda = 0.1
-        T_Security_Rate = 2  # 根据实际情况再选取
+        T_Security_Rate = 0.5  # need to be select depend on facts
         # print ("Reward", V2I_reward, V2V_reward, time_left)
         # The <"t"> represents the reward
         if (np.all(V2V_Security_Rate > T_Security_Rate)) or (np.all(V2V_Security_Rate == T_Security_Rate)):
