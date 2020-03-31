@@ -14,6 +14,9 @@ class Agent(BaseModel):
     def __init__(self, config, environment, sess):
         self.sess = sess
         self.weight_dir = 'weight'
+        self.record_dir = 'record'
+        self.recordfile_name = ''
+        self.now_time = time.strftime("%m-%d-%H-%M",time.localtime(time.time())) 
         self.env = environment
         model_dir = './Model/a.model'
         self.memory = ReplayMemory(model_dir)
@@ -26,7 +29,6 @@ class Agent(BaseModel):
         # The one is used for testing, and the other is used for training
         self.action_all_with_power = np.zeros([self.num_vehicle, 3, 2],
                                               dtype='int32')  # this is actions that taken by V2V links with power
-                                                                # what's the 2 meaning ?
         self.action_all_with_power_training = np.zeros([self.num_vehicle, 3, 2],
                                                        dtype='int32')
         self.reward = []
@@ -47,7 +49,7 @@ class Agent(BaseModel):
 
     # This function is used to store the transmit power and channel selected by each V2V link 
     # Store in an <"action"> matrix 
-    def merge_action(self, idx, action):    # don't know
+    def merge_action(self, idx, action):
         self.action_all_with_power[idx[0], idx[1], 0] = action % self.RB_number
         self.action_all_with_power[idx[0], idx[1], 1] = int(np.floor(action / self.RB_number))
    
@@ -93,13 +95,13 @@ class Agent(BaseModel):
             # Each number from 0 ~ 60 represents a choice
             action = np.random.randint(60)  # 20RBs X 3 power level
         else:
-            action = self.q_action.eval({self.s_t: [s_t]})[0]   # ?
+            action = self.q_action.eval({self.s_t: [s_t]})[0]
         return action
 
     # This function used for collcet data for training, and training a mini batch
     def observe(self, prestate, state, reward, action):
         # -----------
-        # Collect Data for Training 用于experience replay
+        # Collect Data for Training and Experience replay
         # ---------
         self.memory.add(prestate, state, reward, action)  # add the state and the action and the reward to the memory
         # print(self.step)
@@ -110,10 +112,28 @@ class Agent(BaseModel):
                 # self.save_weight_to_pkl()
             if self.step % self.target_q_update_step == self.target_q_update_step - 1:
                 # print("Update Target Q network:")
-                self.update_target_q_network()  # 更新目标Q网络的参数
+                self.update_target_q_network()  # update the Target-Q network parameter
+
+    def save_record(self, record_content):
+        if not os.path.exists(self.record_dir):
+            os.makedirs(self.record_dir)
+        if(self.recordfile_name == ''):
+            if(self.double_q == True and self.dueling_q == True):
+                self.recordfile_name = "double_q&dueling_q"
+            else:
+                if(self.double_q == True):
+                    self.recordfile_name = "double_q"
+                else:
+                    if(self.dueling_q == True):
+                        self.recordfile_name = "dueling_q"
+                    else:
+                        self.recordfile_name = "normal_q"
+        with open(os.path.join(self.record_dir, "V-num-%d_%s-%s.txt" % \
+            (self.num_vehicle, self.now_time, self.recordfile_name)), 'a') as f:
+            f.write(record_content)
 
     # The network training and testing funtion
-    def train(self):    # 要修改
+    def train(self): 
         num_game, self.update_count, ep_reward = 0, 0, 0.
         total_reward, self.total_loss, self.total_q = 0., 0., 0.
         max_avg_ep_reward = 0
@@ -124,7 +144,7 @@ class Agent(BaseModel):
         number_not_big = 0
         print(self.num_vehicle)
         #!Step1: Start a new simulation environment
-        self.env.new_random_game(self.num_vehicle)   # 感觉相当于episode
+        self.env.new_random_game(self.num_vehicle)
         for self.step in (range(0, 40000)):  # need more configuration
             #!Step2: Begin training, the tutal steps is 40000
             # initialize set some varibles
@@ -180,9 +200,9 @@ class Agent(BaseModel):
                                 state_old = self.get_state([i, j])
                                 action = self.predict(state_old, self.step, True)
                                 self.merge_action([i, j], action)
-                            if i % (len(self.env.vehicles) / 10) == 1:  # 都加10次？
+                            if i % (len(self.env.vehicles) / 10) == 1: 
                                 action_temp = self.action_all_with_power.copy()
-                                V2V_reward, V2I_reward, V2V_security_rate = self.env.act_asyn(action_temp)  # self.action_all)
+                                V2V_reward, V2I_reward, V2V_security_rate = self.env.act_asyn(action_temp)
                                 Eifficency_V2V.append(np.sum(V2V_reward))
                                 Eifficency_V2I.append(np.sum(V2I_reward))
                                 Security_rate.append(np.sum(V2V_security_rate))
@@ -199,16 +219,17 @@ class Agent(BaseModel):
                 print('Mean of the V2V Eifficency is that ', np.mean(V2V_Eifficency_list))
                 print('Mean of the V2I Eifficency is that ', np.mean(V2I_Eifficency_list))
                 print('Mean of V2V Security Rate is that ', np.mean(V2V_security_rate_list))
+                self.save_record("V2V Efficiency: %f \tV2I Efficiency: %f\tSecurity Rate: %f\tCompound Efficiency: %f\tStep : %d\n" % \
+                    (np.mean(V2V_Eifficency_list),np.mean(V2I_Eifficency_list),\
+                        np.mean(V2V_security_rate_list)/self.num_vehicle,\
+                        0.1 * np.mean(V2I_Eifficency_list) + 0.9 * np.mean(V2V_Eifficency_list), self.step))
+
                 # print('Test Reward is ', np.mean(test_result))
 
     def q_learning_mini_batch(self):
 
         # Training the DQN model
-        # ------ 
-        # s_t, action,reward, s_t_plus_1, terminal = self.memory.sample()
         s_t, s_t_plus_1, action, reward = self.memory.sample()
-        # print()
-        # print('samples:', s_t[0:10], s_t_plus_1[0:10], action[0:10], reward[0:10])
         t = time.time()
         if self.double_q:  # double Q learning
             pred_action = self.q_action.eval({self.s_t: s_t_plus_1})
@@ -224,7 +245,7 @@ class Agent(BaseModel):
                                         {self.target_q_t: target_q_t, self.action: action, self.s_t: s_t,
                                          self.learning_rate_step: self.step})  # training the network
 
-        print('loss is ', loss)  # 每喂一批数据更新一次loss function
+        print('loss is ', loss)
         self.total_loss += loss
         self.total_q += q_t.mean()
         self.update_count += 1
