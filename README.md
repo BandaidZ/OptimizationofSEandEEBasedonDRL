@@ -35,6 +35,7 @@ Because our code was originally based on the tensorflow1.9 framework，and in or
 
 Of course, our code can also be used in tensorflow2.0 or higher, you only need to do a little modification.
 We provide two methods for you to choose，you just need to follow the instructions below.
+
 1、Replace the tensorflow reference "import tensorflow as tf" with the following two sentences
 
 		improt tensorflow.compat.v1 as tf
@@ -85,7 +86,9 @@ In general, you only need to use
 		Python main.py --num_vehicles n 
 
 to run the program, where n is the number of vehicles you want to add to the environment, for example
+
 		python main.py --num_vehicles 20
+
 I highly recommend that you try 20 or 40 vehicles first, so that the training speed of the network is not too slow, and you can see the effect quickly.
 
 If you want to know more, please check the code carefully.
