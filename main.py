@@ -4,7 +4,6 @@ import tensorflow as tf
 from agent import Agent
 from Environment import *
 import os
-
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 tf.reset_default_graph()

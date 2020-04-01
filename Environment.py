@@ -1171,7 +1171,7 @@ class Environ:
     # Compute the Interference to each channel_selection
     def Compute_Interference(self, actions):
         # ====================================================
-        # Compute the Interference to each channel_selection 暂时不改
+        # Compute the Interference to each channel_selection
         # ====================================================
         V2V_Interference = np.zeros((len(self.vehicles), 3, self.n_RB)) + self.sig2
         if len(actions.shape) == 3:
