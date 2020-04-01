@@ -42,10 +42,12 @@ class Agent(BaseModel):
         #Discount factor
         self.discount = 0.5
         self.double_q = True
+        self.dueling_q = True
+        self.training = True
         self.build_dqn()
         # The number of V2V links.
         self.V2V_number = 3 * len(self.env.vehicles)  # every vehicle need to communicate with 3 neighbors
-        self.training = True
+        
 
     # This function is used to store the transmit power and channel selected by each V2V link 
     # Store in an <"action"> matrix 
@@ -142,7 +144,9 @@ class Agent(BaseModel):
         number_big = 0
         mean_not_big = 0
         number_not_big = 0
-        print(self.num_vehicle)
+        print("Vehicle Num :", self.num_vehicle)
+        print("Is Double-DQN :", self.double_q)
+        print("Is Dueling-DQN :", self.dueling_q)
         #!Step1: Start a new simulation environment
         self.env.new_random_game(self.num_vehicle)   # episode
         for self.step in (range(0, 40000)):  # need more configuration
@@ -269,16 +273,28 @@ class Agent(BaseModel):
                 'encoder_h2': tf.Variable(tf.truncated_normal([n_hidden_1, n_hidden_2], stddev=0.1)),
                 'encoder_h3': tf.Variable(tf.truncated_normal([n_hidden_2, n_hidden_3], stddev=0.1)),
                 'encoder_h4': tf.Variable(tf.truncated_normal([n_hidden_3, n_output], stddev=0.1)),
+
                 'encoder_b1': tf.Variable(tf.truncated_normal([n_hidden_1], stddev=0.1)),
                 'encoder_b2': tf.Variable(tf.truncated_normal([n_hidden_2], stddev=0.1)),
                 'encoder_b3': tf.Variable(tf.truncated_normal([n_hidden_3], stddev=0.1)),
                 'encoder_b4': tf.Variable(tf.truncated_normal([n_output], stddev=0.1)),
 
+                'encoder_h_dueling': tf.Variable(tf.truncated_normal([n_hidden_3, 1], stddev=0.1)),
+                'encoder_b_dueling': tf.Variable(tf.truncated_normal([1], stddev=0.1)),
             }
             layer_1 = tf.nn.relu(tf.add(tf.matmul(x, weights['encoder_h1']), weights['encoder_b1']))
             layer_2 = tf.nn.relu(tf.add(tf.matmul(layer_1, weights['encoder_h2']), weights['encoder_b2']))
             layer_3 = tf.nn.relu(tf.add(tf.matmul(layer_2, weights['encoder_h3']), weights['encoder_b3']))
-            layer_4 = tf.nn.relu(tf.add(tf.matmul(layer_3, weights['encoder_h4']), weights['encoder_b4']))
+
+            if self.dueling_q:
+                layer_value = tf.add(tf.matmul(layer_3, weights['encoder_h_dueling']), weights['encoder_b_dueling'])
+                layer_advantage = tf.add(tf.matmul(layer_3, weights['encoder_h4']), weights['encoder_b4'])
+
+                layer_4 = layer_value + layer_advantage - tf.reduce_mean(layer_advantage , axis = 1 , keep_dims = True )
+
+            else:
+                layer_4 = tf.add(tf.matmul(layer_3, weights['encoder_h4']), weights['encoder_b4'])
+
             return layer_4, weights
         # Used for prediction
         with tf.variable_scope('prediction'):
