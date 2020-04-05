@@ -105,7 +105,7 @@ If you want to know more, please check the code carefully.
 
 ### Data Record
 
-The data from each run of the program is placed in a folder called <record>, and the data files are named as "the number of vehicles in the environment", "the start time of the program", and "the dqn model". Such as
+The data from each run of the program is placed in a folder called record, and the data files are named as "the number of vehicles in the environment", "the start time of the program", and "the dqn model". Such as
 
 		record/V_num_20-03-27-11-43_double_q&dueling_q.txt
 
