@@ -41,6 +41,15 @@ We provide two methods for you to choose，you just need to follow the instructi
 		import tensorflow.compat.v1 as tf
 		tf.disable_v2_behavior()
 
+Static graph is the main operation mode of tensor flow in tensorflow 1.X. Its operation mechanism is to separate "definition" from "operation". Equivalent to: first build a structure with the program (that is, build a graph in memory), let the data (tensor flow) calculate according to the structure sequence in the graph, and finally run the result.
+
+Although dynamic graphs are the default in tensorflow 2.X, static graphs can also be used. In tensorflow 2.X, the steps to use a static graph are exactly the same as in tensorflow 1.X.
+
+However, the static graph is not the default working mode in tensorflow 2.X, two points should be noted when using it:
+
+(1) Replace the static graph interface in tensorflow 1.X with the corresponding interface under tf.compat.v1 module.
+(2) At the beginning of the code, use the tf.compat.v1.disable_V2_behavior function to turn off dynamic graph mode.
+
 Only the above, other code does not need to be modified. We think that if you only use the code steadily and have no intention of refactoring, this method is the first choice.
 
 2、TensorFlow 2.0 provides a command line migration tool to automatically convert 1.x code to 2.0 code, use this
