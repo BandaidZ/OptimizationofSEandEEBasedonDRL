@@ -48,6 +48,7 @@ Although dynamic graphs are the default in tensorflow 2.X, static graphs can als
 However, the static graph is not the default working mode in tensorflow 2.X, two points should be noted when using it:
 
 (1) Replace the static graph interface in tensorflow 1.X with the corresponding interface under tf.compat.v1 module.
+
 (2) At the beginning of the code, use the tf.compat.v1.disable_V2_behavior function to turn off dynamic graph mode.
 
 Only the above, other code does not need to be modified. We think that if you only use the code steadily and have no intention of refactoring, this method is the first choice.
