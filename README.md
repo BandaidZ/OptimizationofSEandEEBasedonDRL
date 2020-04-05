@@ -38,7 +38,7 @@ We provide two methods for you to choose，you just need to follow the instructi
 
 1、Replace the tensorflow reference "import tensorflow as tf" with the following two sentences
 
-		improt tensorflow.compat.v1 as tf
+		import tensorflow.compat.v1 as tf
 		tf.disable_v2_behavior()
 
 Only the above, other code does not need to be modified. We think that if you only use the code steadily and have no intention of refactoring, this method is the first choice.
