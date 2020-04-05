@@ -31,7 +31,7 @@ If you want to install the version of tensorflow GPU, you also need to check the
 
 ### Warning
 
-Because our code was originally based on the tensorflow1.9 framework，and in order to run more succinctly, we recommend that you use tensorflow 1.9 or higher (not more than 2.0)
+Because our code was originally based on the tensorflow1.9 framework，and in order to run more succinctly, we recommend that you use tensorflow 1.9 or higher (not more than 2.0).
 
 Of course, our code can also be used in tensorflow2.0 or higher, you only need to do a little modification.
 We provide two methods for you to choose，you just need to follow the instructions below.
